@@ -1,0 +1,6 @@
+{
+  "someResponseSchema": {
+    "clientExpectedKey": "serverResponseKey",
+    "anotherClientExpectedKey": "some-other-server-response-key"
+  }
+}

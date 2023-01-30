@@ -1,0 +1,40 @@
+{
+  "support": {
+    "client": {
+      "type": "string",
+      "required": true,
+      "default": "web",
+      "description": "Client name"
+    },
+    "userId": {
+      "type": "string",
+      "required": false,
+      "default": "0",
+      "description": "User ID"
+    },
+    "sessionId": {
+      "type": "string",
+      "required": false,
+      "default": "0",
+      "description": "Session ID"
+    },
+    "language": {
+      "type": "string",
+      "required": false,
+      "default": "en",
+      "description": "Language"
+    },
+    "responseSchema": {
+      "type": "string",
+      "required": false,
+      "default": null,
+      "description": "determines the mapping used for converting response object keys to client expected keys"
+    },
+    "skipBasicResponseSchemaValidation": {
+      "type": "string",
+      "required": false,
+      "default": false,
+      "description": "valueless. if this key is present in support object, basic schema validation will be skipped, regardless of value."
+    }
+  }
+}

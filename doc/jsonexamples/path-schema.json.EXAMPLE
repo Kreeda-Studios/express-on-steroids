@@ -1,0 +1,9 @@
+{
+  "<yourPathVariableName>": {
+    "type": "string", // serving only string type for now.
+    "required": true, // if required, but not received an error will be thrown.
+    "sequence": 0, // 0 indexed segment number of your variable in request path.
+    "default": "default value for your variable", // this value will be used if received value is 'default'.
+    "description": "breif of <yourPathVariableName>"
+  },
+}

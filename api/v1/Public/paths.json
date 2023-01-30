@@ -1,0 +1,19 @@
+{
+  "categorySpecificMiddlewares": [],
+  "default": {
+    "description": "does something",
+    "methods": ["GET"],
+    "auth": {},
+    "handlers": {
+      "GET": "./public/handlers.js->default"
+    },
+    "middlewares": {
+      "GET": []
+    },
+    "parameters": {
+      "support": [],
+      "query": [],
+      "headers": []
+    }
+  }
+}

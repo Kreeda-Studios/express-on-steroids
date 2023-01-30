@@ -1,0 +1,27 @@
+{
+  "categorySpecificMiddlewares": ["./path/to/middlewares/file.js->func", "./path/to/middlewares/file.js->funnyFunction"], // middlewares that will run for all request of any method under this category.
+  "<route name>": {
+    "methods": ["GET"], // allowed http methods
+    "auth": {
+      "type": "none", // not used yet
+      "userGroups": ["guest"] // not used yet
+    },
+    "description": "breif overview of <route name> and what it does.",
+    "parameters": {
+      "support": ["support1", "support2"], // required keys in support object for given endpoint.
+      "query": ["query1", "query2"], // required keys in query object.
+      "headers": ["Content-Type", "Accept"] // required request http headers.
+    },
+    "handlers": {
+      // functions that will be executed for respective http method.
+      // "httpMethod": "./path/to/js/file->functionName"
+      // -> is a separator, which divides file and function
+      "GET": "./handlers-><handlerFunctionName>",
+      "POST": "./handlers-><defaultHandlerFunction>"
+    },
+    "middlewares": {
+      "GET": ["./path/to/middlewares/file.js->functionName", "./path/to/middlewares/file.js->function2Name"], // sequence sensitive middleware function paths.
+      "POST": ["./path/to/middlewares/file.js->function2Name", "./path/to/middlewares/file.js->functionName"]
+    }
+  }
+}

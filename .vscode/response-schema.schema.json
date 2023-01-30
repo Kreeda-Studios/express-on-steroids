@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "description": "Used for defining views for responses. Each response schema defines a mapping of the client expected key in API Response Object, with actual API response object's key.",
+
+  "patternProperties": {
+    "^[A-Za-z0-9\\._%\\+-]": {
+      "type": "object",
+      "defaultSnippets": [
+        {
+          "label": "response schema snippet",
+          "description": "boiler plate snippet for response schema with smart cursor placement.",
+          "body": {
+            "$1": "$2"
+          }
+        }
+      ],
+      "description": "name of response schema"
+    }
+  },
+  "properties": {
+    "someResponseSchema": {
+      "type": "object",
+      "defaultSnippets": [
+        {
+          "label": "response schema snippet",
+          "description": "boiler plate snippet for response schema with smart cursor placement.",
+          "body": {
+            "$1": "$2"
+          }
+        }
+      ],
+      "description": "name of response schema"
+    }
+  }
+}

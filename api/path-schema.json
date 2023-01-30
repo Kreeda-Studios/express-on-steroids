@@ -1,0 +1,30 @@
+{
+  "version": {
+    "type": "string",
+    "required": true,
+    "sequence": 0,
+    "default": "default",
+    "description": "API version"
+  },
+  "category": {
+    "type": "string",
+    "required": true,
+    "sequence": 1,
+    "default": "public",
+    "description": "API category"
+  },
+  "request": {
+    "type": "string",
+    "required": true,
+    "sequence": 2,
+    "default": "default",
+    "description": "API request"
+  },
+  "support": {
+    "type": "string",
+    "required": false,
+    "sequence": 3,
+    "default": "0",
+    "description": "API support"
+  }
+}

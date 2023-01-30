@@ -1,0 +1,33 @@
+{
+  "Generate v1 request handler function": {
+    "prefix": "handler",
+    "scope": "javascript",
+    "body": [
+      "/**",
+      "*",
+      "* @param {Request} req",
+      "* @returns {{}} response to be sent to client",
+      "*/",
+      "exports.${1:handlerFunctionName} = async (req) => {",
+      "  return {",
+      "    status: ${2:200},",
+      "    message: \"${3:handler message}\"",
+      "  };",
+      "};"
+    ],
+    "description": "handler function"
+  },
+  "Generate custom middleware function": {
+    "prefix": "middleware",
+    "scope": "javascript",
+    "body": [
+      "/**",
+      " * @param {Request} req",
+      " * @param {Response} res",
+      " */",
+      "exports.${1:someMiddleware} = (req, res) => {",
+      "  req.setMiddlewareData(\"someKey\", \"someValue\");",
+      "};"
+    ]
+  }
+}

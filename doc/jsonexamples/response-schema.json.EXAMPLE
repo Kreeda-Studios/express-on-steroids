@@ -1,0 +1,16 @@
+// response-schema.json is version dependant, category independant.
+{
+  "<schema-name>": {
+    "<client-expected-field-name>": "<handlerReturnedFieldName>",
+  },
+  "details": {
+    "fullName": name,
+    "residentialAddress": address,
+    "mobile": phone,
+    "coordinates": currentLocation
+  },
+  "details-hindi": {
+    "नाम": "name",
+    "फ़ोन नंबर": "phone",
+  }
+}

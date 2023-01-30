@@ -1,0 +1,10 @@
+{
+  "support": {
+    "<yourSupportKeyName>": {
+      "type": "string",
+      "required": true, // boolean, if true, but not received, default value will be used.
+      "default": "web", // default value that will be used if received value is 'default'
+      "description": "breif of <yourSupportKeyName>"
+    },
+  }
+}

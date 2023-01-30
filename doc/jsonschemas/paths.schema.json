@@ -1,0 +1,257 @@
+{
+  "type": "object",
+  "description": "`paths.json` defines all the routes that are available for a specific category. They determine the required request structure for a client request to be processed. They can be used as a metadata for dictating a request structure for specific request.",
+  "patternProperties": {
+    "^[A-Za-z0-9\\._%\\+-]": {
+      "type": "object",
+      "defaultSnippets": [
+        {
+          "label": "request schema snippet.",
+          "description": "boiler plate snippet for request schema with smart cursor placement.",
+          "body": {
+            "description": "$1",
+            "methods": ["$2"],
+            "auth": {},
+            "handlers": {
+              "$2": "$3"
+            },
+            "middlewares": {
+              "$2": ["$4"]
+            },
+            "parameters": {
+              "support": ["$5"],
+              "query": ["$6"],
+              "headers": ["$7"]
+            }
+          }
+        }
+      ],
+      "description": "The structure for a http request",
+      "required": ["methods", "description", "handlers"],
+      "additionalProperties": false,
+      "properties": {
+        "methods": {
+          "type": "array",
+          "description": "supported http methods by this request",
+          "default": ["GET"],
+          "items": {
+            "type": "string",
+            "defaultSnippets": [
+              {
+                "description": "GET http method",
+                "body": "GET"
+              },
+              {
+                "description": "POST http method",
+                "body": "POST"
+              },
+              {
+                "description": "PUT http method",
+                "body": "PUT"
+              },
+              {
+                "description": "DELETE http method",
+                "body": "DELETE"
+              }
+            ]
+          },
+          "minItems": 1
+        },
+        "auth": {
+          "type": "object",
+          "description": "will be used in future for auth related properties."
+        },
+        "description": {
+          "type": "string",
+          "description": "brief description of the request.",
+          "default": "brief description of the request."
+        },
+        "parameters": {
+          "type": "object",
+          "description": "defines the keys for various parameters such as support, query and headers.",
+          "properties": {
+            "support": {
+              "type": "array",
+              "default": [],
+              "description": "allowed keys for support for this request."
+            },
+            "query": {
+              "type": "array",
+              "default": [],
+              "description": "allowed keys for query for this request."
+            },
+            "headers": {
+              "type": "array",
+              "default": [],
+              "description": "allowed keys for headers for this request."
+            }
+          },
+          "defaultSnippets": [
+            {
+              "label": "empty support, query and headers",
+              "description": "declares support, query and headers empty fields.",
+              "body": { "support": ["$1"], "query": ["$2"], "headers": ["$3"] }
+            }
+          ]
+        },
+        "handlers": {
+          "type": "object",
+          "description": "handler functions for this request, provided as <HTTP_METHOD>: <HANDLER_FUNCTION>",
+          "properties": {
+            "GET": {
+              "type": "string",
+              "description": "handler function that will run for GET request.",
+              "default": ""
+            },
+            "POST": {
+              "type": "string",
+              "description": "handler function that will run for POST request.",
+              "default": ""
+            },
+            "PUT": {
+              "type": "string",
+              "description": "handler function that will run for PUT request.",
+              "default": ""
+            },
+            "DELETE": {
+              "type": "string",
+              "description": "handler function that will run for DELETE request.",
+              "default": ""
+            }
+          },
+          "defaultSnippets": [
+            {
+              "label": "ALL http methods",
+              "description": "editable handler paths for all http methods",
+              "body": { "GET": "$1", "POST": "$2", "PUT": "$3", "DELETE": "$4" }
+            },
+            {
+              "label": "GET",
+              "description": "editable handler for GET",
+              "body": { "GET": "$1" }
+            },
+            {
+              "label": "POST",
+              "description": "editable handler for POST",
+              "body": { "POST": "$1" }
+            },
+            {
+              "label": "PUT",
+              "description": "editable handler for PUT",
+              "body": { "PUT": "$1" }
+            },
+            {
+              "label": "DELETE",
+              "description": "editable handler for DELETE",
+              "body": { "DELETE": "$1" }
+            }
+          ]
+        },
+        "middlewares": {
+          "type": "object",
+          "description": "array of middleware functionpaths mapped to http method.",
+          "defaultSnippets": [
+            {
+              "label": "All http method middlewares",
+              "description": "editable middlewares for all http methods.",
+              "body": {
+                "GET": ["$1"],
+                "POST": ["$2"],
+                "PUT": ["$3"],
+                "DELETE": ["$4"]
+              }
+            },
+            {
+              "label": "GET http method middlewares",
+              "description": "editable middlewares for GET http method.",
+              "body": {
+                "GET": ["$1"]
+              }
+            },
+            {
+              "label": "POST http method middlewares",
+              "description": "editable middlewares for POST http method.",
+              "body": {
+                "POST": ["$1"]
+              }
+            },
+            {
+              "label": "PUT http method middlewares",
+              "description": "editable middlewares for PUT http method.",
+              "body": {
+                "PUT": ["$1"]
+              }
+            },
+            {
+              "label": "DELETE http method middlewares",
+              "description": "editable middlewares for DELETE http method.",
+              "body": {
+                "DELETE": ["$1"]
+              }
+            }
+          ],
+          "properties": {
+            "GET": {
+              "type": "array",
+              "description": "middlewares that will run for GET request."
+            },
+            "POST": {
+              "type": "array",
+              "description": "middlewares that will run for POST request."
+            },
+            "PUT": {
+              "type": "array",
+              "description": "middlewares that will run for PUT request."
+            },
+            "DELETE": {
+              "type": "array",
+              "description": "middlewares that will run for DELETE request."
+            }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "categorySpecificMiddlewares": {
+      "type": "array",
+      "description": "middlewares that will always run for this category.",
+      "items": {
+        "type": "string"
+      },
+      "defaultSnippets": [
+        {
+          "label": "Empty category specific middlewares",
+          "description": "declares a structure with no category specific middlewares.",
+          "body": ["$1"]
+        }
+      ]
+    },
+    "someRequest": {
+      "type": "object",
+      "description": "structure for http request",
+      "defaultSnippets": [
+        {
+          "label": "request schema snippet.",
+          "description": "boiler plate snippet for request schema with smart cursor placement.",
+          "body": {
+            "description": "$1",
+            "methods": ["$2"],
+            "auth": {},
+            "handlers": {
+              "$2": "$3"
+            },
+            "middlewares": {
+              "$2": ["$4"]
+            },
+            "parameters": {
+              "support": ["$5"],
+              "query": ["$6"],
+              "headers": ["$7"]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

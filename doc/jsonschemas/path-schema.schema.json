@@ -1,0 +1,52 @@
+{
+  "type": "object",
+  "required": ["version", "category", "request", "support"],
+  "description": "This file determines the names of various segments of request path. Each segment of request path is separated by `/`",
+
+  "patternProperties": {
+    "^[A-Za-z0-9\\._%\\+-]": {
+      "type": "object",
+      "defaultSnippets": [
+        {
+          "label": "path variable schema snippet",
+          "description": "boiler plate snippet for path variable with smart cursor placement.",
+          "body": {
+            "type": "string",
+            "required": true,
+            "sequence": 999,
+            "default": "$1",
+            "description": "$2"
+          }
+        }
+      ],
+      "description": "name of variable in request path",
+      "required": ["required", "description", "sequence", "default"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "default": "string",
+          "description": "type of value of path variable"
+        },
+        "required": {
+          "type": "boolean",
+          "default": true,
+          "description": "should this variable always be present in request path."
+        },
+        "sequence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "starting from 0, the position where the variable will be in request path."
+        },
+        "description": {
+          "type": "string",
+          "description": "brief description of why this variable is useful"
+        },
+        "default": {
+          "type": "string",
+          "description": "The default value that should/could be used in case no value is provided."
+        }
+      }
+    }
+  }
+}

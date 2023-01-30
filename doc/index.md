@@ -9,10 +9,10 @@ This document serves as an entrypoint to the discussing whats possible with this
 2. [Add new Endpoint](./addNewEndpoint.md)
 3. [Learn more about the various JSON files](./jsonFilesDoc.md)
 4. [Change the flow of middleware execution](./addNewMiddleware.md#configuring-middleware)
-5. [The control flow](./controlFlow.md)
 
 ### Where to find EXAMPLE JSON files?
-They are in doc/jsonexamples
+They are in doc/jsonexamples  
+
 [Where to place them?](./jsonFilesDoc.md) 
 
 ### How you can help?

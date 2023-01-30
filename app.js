@@ -21,9 +21,9 @@ app.use(function (req, res, next) {
 
 //Handle all Http methods on any path
 app.all("*", handleRequest);
-
-app.listen(3000, function () {
-  console.log("App started");
+const PORT = 3000;
+app.listen(PORT, function () {
+  console.log(`your awesome api running at http://127.0.0.1:${PORT}`);
 });
 
 module.exports = app;

@@ -9,13 +9,13 @@
       "* @returns {{}} response to be sent to client",
       "*/",
       "exports.${1:handlerFunctionName} = async (req) => {",
-      "  return {",
-      "    status: ${2:200},",
-      "    message: \"${3:handler message}\"",
-      "  };",
+      "\treturn {",
+      "\t\tstatus: ${2:200},",
+      "\t\tmessage: \"${3:handler message}\"",
+      "\t};",
       "};"
     ],
-    "description": "handler function"
+    "description": "handler function boilerplate snippet"
   },
   "Generate custom middleware function": {
     "prefix": "middleware",
@@ -26,8 +26,9 @@
       " * @param {Response} res",
       " */",
       "exports.${1:someMiddleware} = (req, res) => {",
-      "  req.setMiddlewareData(\"someKey\", \"someValue\");",
+      "\treq.setMiddlewareData(\"someKey\", \"someValue\");",
       "};"
-    ]
+    ],
+    "description": "middleware function boilerplate"
   }
 }

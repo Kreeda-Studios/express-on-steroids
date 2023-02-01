@@ -16,6 +16,10 @@ This document serves as an entrypoint to the discussing whats possible with this
     * [Add new API version](./apiVersioning.md#adding-new-api-version)
     * [Change default api version](./apiVersioning.md#changing-default-api-version)
     * [Discarding a currently supported API version.](./apiVersioning.md#discarding-a-currently-supported-api-version)
+6. Response
+    * [skip response validation](./jsonFilesDoc.md#configresponserequiredkeys)
+    * [request specific structure for response](./jsonFilesDoc.md#response-schema)
+    * [add more keys which should be present in all responses](./jsonFilesDoc.md#configresponserequiredkeys)
 
 ### Where to find EXAMPLE JSON files?
 They are in doc/jsonexamples  

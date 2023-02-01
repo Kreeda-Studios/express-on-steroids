@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars*/
 const express = require("express");
+const CustomError = require("./CustomError");
 /* eslint-enable no-unused-vars*/
 
 const VersionModule = require("./versions");
@@ -11,7 +12,7 @@ const VersionModule = require("./versions");
  * @property {Request} request
  * @property {Response} response
  * @returns {null} - Returns null
- * @throws {Error} - Throws an error if the version is not found
+ * @throws {CustomError} - Throws an error if the version is not found
  **/
 exports.handleRequest = (expressRequest, expressResponse) => {
   try {
@@ -57,12 +58,11 @@ const parseVersionName = (expressRequest) => {
   let VERSION_METADATA;
   try {
     const PATH_SCHEMA = require("./path-schema.json");
-    if (!PATH_SCHEMA || !PATH_SCHEMA.version) throw new Error("");
+    if (!PATH_SCHEMA || !PATH_SCHEMA.version) throw new CustomError();
     VERSION_METADATA = PATH_SCHEMA.version;
   } catch (error) {
-    throw new Error(
-      "cannot locate 'version' entry in path-schema.json, loading version metadata fails. "
-    );
+    console.error(error);
+    throw new CustomError();
   }
   const pathSplits =
     (expressRequest.path &&

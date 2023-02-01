@@ -5,7 +5,7 @@ const Request = require("../api/v1/Request");
 const Response = require("../api/v1/Response");
 /* eslint-enable no-unused-vars*/
 
-const CustomError = require("../api/v1/CustomError");
+const CustomError = require("../api/CustomError");
 
 /**
  * @class Middleware
@@ -39,10 +39,12 @@ class Middleware {
    * @throws {CustomError}
    */
   constructor(request) {
-    if (!request)
-      throw new CustomError(
+    if (!request) {
+      console.error(
         "missing parameter 'request', initializing class Middleware fails."
       );
+      throw new CustomError();
+    }
     this.#middlewares = [];
     this.#middlewareFunctionPaths = [];
     this.#requestPathVariables = request.getPathVariables();
@@ -107,7 +109,7 @@ class Middleware {
       alwaysFuncPaths =
         require("../config.js")["middlewares"][ALWAYS_RUN_SECTION] || [];
     } catch (error) {
-      console.trace(error.message);
+      console.warn(error);
     }
     this.#middlewareFunctionPaths =
       this.#middlewareFunctionPaths.concat(alwaysFuncPaths);
@@ -221,6 +223,7 @@ class Middleware {
         this.addToFront(f);
         i--;
       } catch (error) {
+        // remove non importable function paths from functionPaths
         functionPaths.splice(i, 1);
         i--;
         console.warn(error.message);
@@ -243,26 +246,28 @@ class Middleware {
     try {
       allFunctions = require(fileName);
     } catch (error) {
-      throw new CustomError(
-        error.message + ", importing middleware fails",
-        400
-      );
+      console.log(`cannot import middleware in ${fileName}->${functionName}`);
+      console.error(error);
+      throw new CustomError();
     }
-    if (!allFunctions)
-      throw new CustomError(
+    if (!allFunctions) {
+      console.error(
         `no middleware file with name "${fileName}" found, importing middleware fails.`,
         400
       );
+      throw new CustomError();
+    }
     if (!Object.keys(allFunctions).includes(functionName)) {
-      throw new CustomError(
-        `no middleware with name ${functionName} found, importing middleware fails.`,
-        400
+      console.error(
+        `no middleware with name ${functionName} found, importing middleware fails.`
       );
+      throw new CustomError();
     }
     if (!allFunctions[functionName]) {
-      throw new CustomError(
+      console.error(
         `function body not defined for function "${functionName}", importing middleware fails.`
       );
+      throw new CustomError();
     }
     return allFunctions[functionName];
   };

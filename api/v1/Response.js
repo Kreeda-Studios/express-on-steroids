@@ -3,7 +3,7 @@
 const express = require("express");
 /* eslint-enable no-unused-vars */
 
-const CustomError = require("./CustomError");
+const CustomError = require("../CustomError");
 
 const RESPONSE_SCHEMA_FILENAME = "response-schema.json";
 
@@ -27,15 +27,16 @@ class Response {
    * @param {{}} support
    */
   constructor(expressResponse, support) {
-    if (!expressResponse)
-      throw new CustomError(
-        "expressResponse not accessible from Response, initialising Response fails.",
-        500
+    if (!expressResponse) {
+      console.error(
+        "expressResponse not accessible from Response, initialising Response fails."
       );
+      throw new CustomError();
+    }
     this.#response = expressResponse;
     this.#support = support || {};
     this.setStatus(500);
-    this.#responseData = { message: "default response message." };
+    this.#responseData = { message: "default response message.", status: 500 };
   }
 
   // ==========================
@@ -88,10 +89,10 @@ class Response {
    */
   handling(responseData) {
     if (!responseData) {
-      throw new CustomError(
-        "handler didn't return anything, skipping response handling.",
-        400
+      console.error(
+        "handler didn't return anything, skipping response handling."
       );
+      return this;
     }
     this.#setResponseData(responseData);
     const specifiedResponseSchema = this.#getSpecifiedResponseSchema();
@@ -264,9 +265,8 @@ class Response {
       try {
         return require(`./${RESPONSE_SCHEMA_FILENAME}`)[schemaName];
       } catch (error) {
-        console.warn(
-          `no schema "${schemaName}" found in response-schema.json, no response schema will be applied.`
-        );
+        // `no schema "${schemaName}" found in response-schema.json, no response schema will be applied.`
+        console.error(error);
       }
     }
     return null;
@@ -282,7 +282,7 @@ class Response {
       let basicKeys = require("../../config.js")["response"][BASIC_SCHEMA_NAME];
       return basicKeys.filter((item) => item !== "");
     } catch (error) {
-      console.trace(error.message);
+      console.error(error);
     }
     return null;
   }
@@ -315,10 +315,10 @@ class Response {
       let availableKeys = Object.keys(rawResponseData);
       for (let key of requiredResponseKeys) {
         if (!availableKeys.includes(key)) {
-          throw new CustomError(
-            `key '${key}' must be present in handler's return object. validating response schema fails.`,
-            400
+          console.error(
+            `key '${key}' must be present in handler's return object. validating response schema fails.`
           );
+          throw new CustomError();
         }
       }
     }

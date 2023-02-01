@@ -72,5 +72,5 @@ const parseVersionName = (expressRequest) => {
     (pathSplits.length > VERSION_METADATA.sequence &&
       pathSplits[VERSION_METADATA.sequence]) ||
     VERSION_METADATA.default;
-  return versionName;
+  return versionName.toLowerCase();
 };

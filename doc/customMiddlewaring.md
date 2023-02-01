@@ -1,4 +1,7 @@
-## Adding new middleware
+# Custom Middlewares
+This document serves to discuss the common interaction with custom middlewares, how to change their execution flow, how to add middlewares that run during specific points in the request lifecycle etc.
+
+## Adding a middleware for all and every request
 1. Add a new javascript file, or use existing, to middlewares directory. say `auth.js`. 
 2. Define a middleware function `login` in your newly created file `auth.js` and export it.
 ```js
@@ -15,13 +18,75 @@ exports.login = (req, res) => {
   }
 };
 ```
-3. Specify the middleware as a requirement at one of the following place:
-  * in `config.json['middleware']['allRequests']` , if this middleware should run for any and all requests.
-  * in `./User/paths.json[categorySpecificMiddlewares]` , if this middleware should run for any and all request to category `User`.
-  * in `./User/paths.json['profile']['GET']` , if this middleware should run only for `GET` request to `/<versionIdentifier>/user/profile`.
+3. Specify the middleware as a requirement in an *array* at `config.js['middleware']['allRequests']`.
+> config.js
+```js
+module.exports = config = {
+  ...
+  middlewares: {
+    allRequests: [
+      ...
+      "./auth.js->login"
+    ],
+  },
+  ...
+};
+```
 
-Example:
->v1/User/paths.json
+4. Done.
+
+
+## Adding a middleware for all and every request to a specific category of requests.
+1. Add a new javascript file, or use existing, to middlewares directory. say `auth.js`. 
+2. Define a middleware function `login` in your newly created file `auth.js` and export it.
+```js
+/**
+ * @param {Request} req
+ * @param {Response} res
+ */
+exports.login = (req, res) => {
+  if (req.getHttpHeaders().authorization) {
+    console.log("authorization header found");
+    req.setMiddlewareData("isLoggedIn", true);
+    req.setMiddlewareData("login", "OK");
+    req.setMiddlewareData("user", {id: "idkfa"})
+  }
+};
+```
+3. Specify the middleware as a requirement in an *array* at `api/<versionName>/<categoryName>/paths.json[categorySpecificMiddlewares]`.
+> api/\<versionName\>/\<categoryName\>/paths.json
+```json
+{
+  "categorySpecificMiddlewares": [
+    ...
+    "./auth.js->login"
+  ],
+  ...
+}
+```
+4. Done.
+
+
+## Adding a middleware for a specific request
+1. Add a new javascript file, or use existing, to middlewares directory. say `auth.js`. 
+2. Define a middleware function `login` in your newly created file `auth.js` and export it.
+```js
+/**
+ * @param {Request} req
+ * @param {Response} res
+ */
+exports.login = (req, res) => {
+  if (req.getHttpHeaders().authorization) {
+    console.log("authorization header found");
+    req.setMiddlewareData("isLoggedIn", true);
+    req.setMiddlewareData("login", "OK");
+    req.setMiddlewareData("user", {id: "idkfa"})
+  }
+};
+```
+3. Specify the middleware as a requirement in a *object* at `api/<versionName>/User/paths.json['profile']['GET']` , if this middleware should run only for `GET` request to `/<versionName>/user/profile`.
+> api/\<versionName\>/\<categoryName\>/paths.json
+
 ```json
 "profile": {
     "methods": ["GET", "POST"],
@@ -45,9 +110,9 @@ Example:
     }
 }
 ```
-* In the given example, `login` middleware would run for `GET` request to `/v1/User/profile`. And no middleware would run for `POST` request.
+  * In the given example, `login` middleware would run for `GET` request to `/v1/User/profile`. And no middleware would run for `POST` request.
 
-4. Finished adding middleware. If Middleware class is configured correctly, the login middleware should execute.
+4. Done.
 
 ## Things to notice.
 

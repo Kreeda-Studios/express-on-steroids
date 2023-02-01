@@ -1,4 +1,4 @@
-# express-on-steroids
+# express-on-steroids ![node version](https://img.shields.io/badge/nodejs-^16.0.0-brightgreen) ![express version](https://img.shields.io/badge/express-^4.15.2-orange)
 express on steroids is architecture which dictates defining api structure as JSON. It hides express related specificity and tries to achieve as many things dynamically as possible.
 ## Available scripts
 In the project directory, you can run:

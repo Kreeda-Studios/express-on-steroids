@@ -23,7 +23,6 @@ class Request {
   #request;
   #mwData;
   /** @type {{String: Array<String>}} */
-  #support;
   /**
    * @param {express.Request} expressRequest express request object received from client
    * **Constructor Sideeffects**: validates request and parses request path variables, which may throw Error.
@@ -38,14 +37,14 @@ class Request {
     this.#request = expressRequest;
     this.#mwData = expressRequest.mwData || {};
 
-    this.#support = null; // {<key> : [<value1>, <value2>, ...]}
-    // this.#parsePathVariables();
     this.getPathVariables = this.#pathVariablesClosure(
       this.getPath(),
       this.getHttpMethod()
     );
-    this.getPathVariables().supported = undefined;
-    console.log(this.getPathVariables());
+    this.getSupportParams = this.#supportParamsClosure(
+      this.getPathVariables().support
+    );
+
     this.#validateRequest();
   }
 
@@ -105,21 +104,7 @@ class Request {
   getVersion() {
     return "v1";
   }
-  /**
-   * parses support params and constructs a Object.
-   * @returns {{String: Array<String>}} Object containing all the parsed support params
-   */
-  getSupportParams() {
-    if (this.#support) return JSON.parse(JSON.stringify(this.#support));
-    const supportString = this.getPathVariables()["support"];
-    // if (!supportString) {
-    //   console.warn(
-    //     "no 'support' field in pathVariables. Warning at getSupportParams() in Request.js."
-    //   );
-    // }
-    this.#support = this.#parseSupportParams(supportString);
-    return JSON.parse(JSON.stringify(this.#support));
-  }
+
   /**
    * parses the handler function location defined in `paths.json`, finds the function and returns it.
    * @returns {function} handler function to execute the actual business logic. `handlerFunction(req)`
@@ -168,65 +153,6 @@ class Request {
     }
     return this.getPathVariables()["request"];
   }
-
-  /**
-   * parses the components of *request path* based on the path schema definition from `path-schema.json`.
-   * @returns {{String: String}}
-   */
-  // getPathVariables() {
-  //   return JSON.parse(JSON.stringify(this.#pathVariables));
-  // }
-  // getPathVariables = this.#pathVariablesIIFE(this.getPath());
-
-  // ===================pathvariables iife helper ==========
-  #pathVariablesClosure(requestPath, httpMethod) {
-    let pathVariables = {};
-    parsePathVariables();
-
-    function parsePathVariables() {
-      let PATH_SCHEMA = {};
-      try {
-        PATH_SCHEMA = require("../path-schema.json"); //{}
-      } catch (error) {
-        // "cannot find path-schema.json, parsing path variables fails."
-        console.error(error);
-        throw new CustomError();
-      }
-      const splitPath =
-        requestPath.split("/").filter((item) => item !== "") || []; // []
-      Object.keys(PATH_SCHEMA).forEach((key) => {
-        const keySchema = PATH_SCHEMA[key]; // {}
-        if (keySchema.required) {
-          if (splitPath.length <= keySchema.sequence) {
-            throw new CustomError(
-              `${key} is required in request path at sequence ${keySchema.sequence}, parsing path variables fails.`,
-              400
-            );
-          }
-          let value = splitPath[keySchema.sequence] || undefined;
-          if (value === "default") value = keySchema.default;
-          pathVariables[key] = value;
-        } else {
-          let value =
-            (splitPath.length > keySchema.sequence &&
-              splitPath[keySchema.sequence]) ||
-            undefined;
-          if (value === "default") value = keySchema.default;
-          pathVariables[key] = value;
-        }
-      });
-      if (!pathVariables["httpMethod"]) {
-        pathVariables["httpMethod"] = httpMethod;
-      }
-    }
-    function getter() {
-      // if dont want to allow modifications to pathVariables use `return JSON.parse(JSON.stringify(pathVariables))`
-      // modifications to pathVariables can be made by using getter().someKey = someValue
-      return pathVariables;
-    }
-    return getter;
-  }
-  // =====================================================
 
   // ====================================
   // Middleware Data getters and setters
@@ -321,51 +247,6 @@ class Request {
   // =============================
   // Utility functions
   // =============================
-
-  /**
-   * used by Request.getSupportParams()
-   * parses support string and construct js Object. Also autofills REQUIRED support params from `params-schema.js`, if not already present, with default values
-   * @param {String} supportString `\~firstKey=value1,value2\~secondKey=value89`
-   * @throws {CustomError}
-   * @returns `{
-   *  firstKey: [value1, value2],
-   *  secondKey=[value89]
-   * }`
-   */
-  #parseSupportParams = (supportString) => {
-    let SUPPORT_SCHEMA;
-    try {
-      const PARAMS_METADATA = require("./../params-schema.json");
-      if (!PARAMS_METADATA.support) throw new CustomError();
-      SUPPORT_SCHEMA = PARAMS_METADATA.support;
-    } catch (error) {
-      // `cannot find definition for 'support' schema in params-schema.json, continuing execution.`
-      console.error(error);
-    }
-    let support = {};
-    if (supportString) {
-      let supportParams =
-        supportString.split("~").filter((item) => item !== "") || [];
-      // map and store key-value pairs
-      supportParams.forEach((supportParam) => {
-        let [key, value] = supportParam.split("=");
-        support[key] = (value && value.split(",")) || [];
-      });
-    }
-
-    // add default values for keys that are required
-    if (SUPPORT_SCHEMA)
-      Object.keys(SUPPORT_SCHEMA).forEach((key) => {
-        if (
-          (!Object.keys(support).includes(key) &&
-            SUPPORT_SCHEMA[key].required) ||
-          support[key] === "default"
-        ) {
-          support[key] = [SUPPORT_SCHEMA[key].default];
-        }
-      });
-    return support;
-  };
 
   /**
    * return JSON object relating to request name from paths.json file
@@ -584,6 +465,145 @@ class Request {
   /** returns relative path to paths.json file */
   get #pathToPathsJson() {
     return path.join(__dirname, this.getCategory());
+  }
+
+  // =========================================
+  // Closures for Core Components of Request
+  // =========================================
+
+  // ============ support closure ============
+  /**
+   * parses support params, stores it as an object and returns a getter function for accessing it.
+   * @returns {Function}
+   */
+  #supportParamsClosure(supportString) {
+    /**
+     * @type {{String: Array<String>}}
+     */
+    const support = {};
+    parseSupportParams(supportString);
+    addDefaultSupport();
+    /**
+     * used by Request.getSupportParams()
+     * parses support string and construct js Object. Also autofills REQUIRED support params from `params-schema.js`, if not already present, with default values
+     * @param {String} supportString `\~firstKey=value1,value2\~secondKey=value89`
+     * @throws {CustomError}
+     * @returns `{
+     *  firstKey: [value1, value2],
+     *  secondKey=[value89]
+     * }`
+     */
+    function parseSupportParams(supportString) {
+      // let support = {};
+      if (supportString) {
+        let supportSplit =
+          supportString.split("~").filter((item) => item !== "") || [];
+        // map and store key-value pairs
+        supportSplit.forEach((supportParam) => {
+          let [key, value] = supportParam.split("=");
+          support[key] = (value && value.split(",")) || [];
+        });
+      }
+    }
+    /**
+     * adds absent required support keys from params-schema.json
+     */
+    function addDefaultSupport() {
+      // add default values for keys that are required
+      const SUPPORT_SCHEMA = getSupportSchema();
+      if (SUPPORT_SCHEMA)
+        Object.keys(SUPPORT_SCHEMA).forEach((key) => {
+          if (
+            (!Object.keys(support).includes(key) &&
+              SUPPORT_SCHEMA[key].required) ||
+            support[key] === "default"
+          ) {
+            support[key] = [SUPPORT_SCHEMA[key].default];
+          }
+        });
+    }
+
+    function getSupportSchema() {
+      let SUPPORT_SCHEMA;
+      try {
+        const PARAMS_METADATA = require("./../params-schema.json");
+        if (!PARAMS_METADATA.support) throw new CustomError();
+        SUPPORT_SCHEMA = PARAMS_METADATA.support;
+      } catch (error) {
+        // `cannot find definition for 'support' schema in params-schema.json, continuing execution.`
+        console.error(error);
+      }
+      return SUPPORT_SCHEMA || {};
+    }
+    function getter() {
+      return support;
+    }
+    return getter;
+  }
+
+  // ============= Path Variables Closure ==================
+  /**
+   * parses path variables, stores it as an object and returns a getter function for accessing it.
+   * @param {String} requestPath
+   * @param {String} httpMethod
+   * @returns {Function}
+   */
+  #pathVariablesClosure(requestPath, httpMethod) {
+    /**
+     * @type {{String: String}}
+     */
+    let pathVariables = {};
+    parsePathVariables();
+
+    function parsePathVariables() {
+      const PATH_SCHEMA = getPathSchema();
+      const splitPath =
+        requestPath.split("/").filter((item) => item !== "") || [];
+
+      Object.keys(PATH_SCHEMA).forEach((key) => {
+        const keySchema = PATH_SCHEMA[key]; // {}
+        let value;
+        if (keySchema.required) {
+          if (splitPath.length <= keySchema.sequence) {
+            throw new CustomError(
+              `${key} is required in request path at sequence ${keySchema.sequence}, parsing path variables fails.`,
+              400
+            );
+          }
+          value = splitPath[keySchema.sequence] || undefined;
+        } else {
+          value =
+            (splitPath.length > keySchema.sequence &&
+              splitPath[keySchema.sequence]) ||
+            undefined;
+        }
+        if (value === "default") value = keySchema.default;
+        pathVariables[key] = value;
+      });
+      if (!pathVariables["httpMethod"]) {
+        pathVariables["httpMethod"] = httpMethod;
+      }
+    }
+    function getPathSchema() {
+      let PATH_SCHEMA = {};
+      try {
+        PATH_SCHEMA = require("../path-schema.json"); //{}
+      } catch (error) {
+        // "cannot find path-schema.json, parsing path variables fails."
+        console.error(error);
+        throw new CustomError();
+      }
+      return PATH_SCHEMA;
+    }
+    /**
+     * @returns {{String: String}} object containing parsed path variables
+     */
+    function getter() {
+      // if dont want to allow modifications to pathVariables use `return JSON.parse(JSON.stringify(pathVariables))`
+      // modifications to pathVariables can be made by using getter().someKey = someValue
+      return pathVariables;
+    }
+    return getter;
   }
 }
 module.exports = Request;

@@ -5,7 +5,7 @@
     "methods": ["GET"],
     "auth": {},
     "handlers": {
-      "GET": "./public/handlers.js->default"
+      "GET": "./handlers.js->default"
     },
     "middlewares": {
       "GET": []

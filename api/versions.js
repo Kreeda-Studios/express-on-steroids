@@ -41,10 +41,8 @@ class VersionModule {
   /**
    * @function getRequestResponse
    * @namespace getRequestResponse
-   * @param {express.Request} expressRequest
-   * @param {express.Response} expressResponse
-   * @property {Request} request
-   * @property {Response} response
+   * @param {import("express").Request} expressRequest
+   * @param {import("express").Response} expressResponse
    * @throws Error for either factory not found OR request-response init
    * @returns {[Request, Response]}
    */
@@ -56,9 +54,9 @@ class VersionModule {
       );
       throw new CustomError();
     }
-    /** @type {Request} */
+    /** @type {import("./v1/Request")} */
     let request;
-    /** @type {Response} */
+    /** @type {import("./v1/Response")} */
     let response;
     [request, response] = RequestResponseFactory(
       expressRequest,

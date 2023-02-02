@@ -4,6 +4,8 @@ const express = require("express");
 /*eslint-enable no-unused-vars*/
 
 const CustomError = require("../CustomError");
+const UTILITY = require("./Utility/utility.js");
+const path = require("path");
 
 /**
  *  #### Acts as a wrapper for *expressRequest*, providing additional functionalities.
@@ -44,6 +46,7 @@ class Request {
   }
 
   /**
+   * A facade that takes care of everything request validation.
    * @private
    * 1. validates allowed http method
    * 2. validates handler presence in `paths.json`
@@ -163,13 +166,15 @@ class Request {
     const handlers = pathsData.handlers;
     if (!handlers) return;
     const funcLocation = handlers[this.getHttpMethod()];
-    const [file, func] = funcLocation.split("->").filter((item) => item !== "");
+    let [file, func] = funcLocation.split("->").filter((item) => item !== "");
     if (!file || !func) {
       console.error(
         `parsing handler string fails for handlerString: ${funcLocation}`
       );
       throw new CustomError();
     }
+    // make file path relative to Request.js
+    file = UTILITY.resolvePath(this.#pathToPathsJson, file);
     return this.#importHandler(file, func);
   }
   /**
@@ -357,7 +362,7 @@ class Request {
   #getPathMetadataByRequestName = (category, requestName) => {
     let pathsJson;
     try {
-      pathsJson = require(`./${category}/paths.json`);
+      pathsJson = require(this.#pathToPathsJson + "/paths.json");
     } catch (error) {
       // `cannot find category '${category}, importing path metdata fails.`
       console.error(error);
@@ -562,5 +567,9 @@ class Request {
     }
     return allHandlers[functionName];
   };
+  /** returns relative path to paths.json file */
+  get #pathToPathsJson() {
+    return path.join(__dirname, this.getCategory());
+  }
 }
 module.exports = Request;

@@ -3,7 +3,9 @@
 const express = require("express");
 /*eslint-enable no-unused-vars*/
 
-const CustomError = require("./CustomError");
+const CustomError = require("../CustomError");
+const UTILITY = require("./Utility/utility.js");
+const path = require("path");
 
 /**
  *  #### Acts as a wrapper for *expressRequest*, providing additional functionalities.
@@ -29,10 +31,12 @@ class Request {
    * **Constructor Sideeffects**: validates request and parses request path variables, which may throw Error.
    */
   constructor(expressRequest) {
-    if (!expressRequest)
-      throw new Error(
+    if (!expressRequest) {
+      console.error(
         "express request object not accessible, initializing Request fails."
       );
+      throw new CustomError();
+    }
     this.#request = expressRequest;
     this.#mwData = expressRequest.mwData || {};
     this.#pathVariables = {};
@@ -42,6 +46,7 @@ class Request {
   }
 
   /**
+   * A facade that takes care of everything request validation.
    * @private
    * 1. validates allowed http method
    * 2. validates handler presence in `paths.json`
@@ -49,8 +54,10 @@ class Request {
    */
   #validateRequest() {
     const metadata = this.getRouteMetadata(); // also validates category
-    if (!metadata)
-      throw new Error("no metadata found, request validation cannot start.");
+    if (!metadata) {
+      console.error("no metadata found, request validation cannot start.");
+      throw new CustomError();
+    }
     this.#validateAllowedMethods(metadata, this.getHttpMethod());
     this.#validateHandlerPresence(metadata, this.getHttpMethod());
     this.#validateRequestHeaders(metadata, this.getHttpHeaders());
@@ -64,14 +71,22 @@ class Request {
    * Stores *default* values if received string is **default**
    */
   #parsePathVariables() {
-    const PATH_SCHEMA = require("../path-schema.json"); //{}
+    let PATH_SCHEMA = {};
+    try {
+      PATH_SCHEMA = require("../path-schema.json"); //{}
+    } catch (error) {
+      // "cannot find path-schema.json, parsing path variables fails."
+      console.error(error);
+      throw new CustomError();
+    }
     const splitPath = this.getSplitPath(); // []
     Object.keys(PATH_SCHEMA).forEach((key) => {
       const keySchema = PATH_SCHEMA[key]; // {}
       if (keySchema.required) {
         if (splitPath.length <= keySchema.sequence) {
-          throw new Error(
-            `${key} is required in request path at sequence ${keySchema.sequence}, parsing path variables fails.`
+          throw new CustomError(
+            `${key} is required in request path at sequence ${keySchema.sequence}, parsing path variables fails.`,
+            400
           );
         }
         let value = splitPath[keySchema.sequence] || undefined;
@@ -151,11 +166,15 @@ class Request {
     const handlers = pathsData.handlers;
     if (!handlers) return;
     const funcLocation = handlers[this.getHttpMethod()];
-    const [file, func] = funcLocation.split("->").filter((item) => item !== "");
-    if (!file || !func)
-      throw new Error(
+    let [file, func] = funcLocation.split("->").filter((item) => item !== "");
+    if (!file || !func) {
+      console.error(
         `parsing handler string fails for handlerString: ${funcLocation}`
       );
+      throw new CustomError();
+    }
+    // make file path relative to Request.js
+    file = UTILITY.resolvePath(this.#pathToPathsJson, file);
     return this.#importHandler(file, func);
   }
   /**
@@ -163,11 +182,12 @@ class Request {
    * @returns {String} category name
    */
   getCategory() {
-    if (!this.getPathVariables()["category"])
-      throw new CustomError(
-        "no 'request' field in pathVariables, make sure 'request' related metadata is defined in 'path-schema.json'. Error at getRequestName() in Request.js.",
-        400
+    if (!this.getPathVariables()["category"]) {
+      console.error(
+        "no 'request' field in pathVariables, make sure 'request' related metadata is defined in 'path-schema.json'. Error at getRequestName() in Request.js."
       );
+      throw new CustomError();
+    }
     return this.getPathVariables()["category"];
   }
 
@@ -178,10 +198,10 @@ class Request {
    */
   getRequestName() {
     if (!this.getPathVariables()["request"]) {
-      throw new CustomError(
-        "no 'request' field in pathVariables, make sure 'request' related metadata is defined in 'path-schema.json'. Error at getRequestName() in Request.js.",
-        400
+      console.error(
+        "no 'request' field in pathVariables, make sure 'request' related metadata is defined in 'path-schema.json'. Error at getRequestName() in Request.js."
       );
+      throw new CustomError();
     }
     return this.getPathVariables()["request"];
   }
@@ -292,6 +312,7 @@ class Request {
    * used by Request.getSupportParams()
    * parses support string and construct js Object. Also autofills REQUIRED support params from `params-schema.js`, if not already present, with default values
    * @param {String} supportString `\~firstKey=value1,value2\~secondKey=value89`
+   * @throws {CustomError}
    * @returns `{
    *  firstKey: [value1, value2],
    *  secondKey=[value89]
@@ -301,12 +322,11 @@ class Request {
     let SUPPORT_SCHEMA;
     try {
       const PARAMS_METADATA = require("./../params-schema.json");
-      if (!PARAMS_METADATA.support) throw new Error();
+      if (!PARAMS_METADATA.support) throw new CustomError();
       SUPPORT_SCHEMA = PARAMS_METADATA.support;
     } catch (error) {
-      console.warn(
-        `cannot find definition for 'support' schema in params-schema.json, continuing execution.`
-      );
+      // `cannot find definition for 'support' schema in params-schema.json, continuing execution.`
+      console.error(error);
     }
     let support = {};
     if (supportString) {
@@ -340,32 +360,42 @@ class Request {
    * @returns {{}} JSON object from /`category`/paths.json for given requestName
    */
   #getPathMetadataByRequestName = (category, requestName) => {
-    const pathsJson = require(`./${category}/paths.json`);
-    if (!pathsJson)
-      throw new Error(
+    let pathsJson;
+    try {
+      pathsJson = require(this.#pathToPathsJson + "/paths.json");
+    } catch (error) {
+      // `cannot find category '${category}, importing path metdata fails.`
+      console.error(error);
+      throw new CustomError();
+    }
+    if (!pathsJson) {
+      console.error(
         "category mismatch, cannot find paths.json for " + category
       );
-    if (typeof pathsJson[requestName] !== "object") {
-      throw new Error(
-        `'/${requestName}' is not a valid requestName for given category ${category}`
-      );
     }
-    if (pathsJson[requestName] && !Array.isArray(pathsJson[requestName])) {
+    if (
+      pathsJson[requestName] &&
+      typeof pathsJson[requestName] === "object" &&
+      !Array.isArray(pathsJson[requestName])
+    ) {
+      // array.isarray check ensures that "categorySpecificMiddleware" is not used as source of request metadata
       const data = pathsJson[requestName];
       let requiredProperties = ["methods", "description", "handlers"];
       for (let requiredProperty of requiredProperties) {
         if (!data[requiredProperty]) {
-          throw new Error(
+          console.error(
             `request schema for request '${requestName}' does not have required property '${requiredProperty}', parsing path metadata fails.`
           );
+          throw new CustomError();
         }
       }
       data["categorySpecificMiddlewares"] =
         pathsJson["categorySpecificMiddlewares"] || [];
       return data;
     }
-    throw new Error(
-      `'/${requestName}' is not a valid requestName for given category ${category}`
+    throw new CustomError(
+      `'/${requestName}' is not a valid requestName for given category ${category}`,
+      400
     );
   };
 
@@ -378,18 +408,24 @@ class Request {
    * @returns
    */
   #validateAllowedMethods = (metadata, reqMethod) => {
-    if (!metadata)
-      throw new Error(
+    if (!metadata) {
+      console.error(
         "no metadata provided for validating allowed methods, request validation fails."
       );
-    if (!metadata.methods)
-      throw new Error(
-        "no methods field in metadata, request validation fails."
-      );
-    if (!metadata.methods.includes(reqMethod))
-      throw new Error(
+      throw new CustomError();
+    }
+    if (!metadata.methods) {
+      console.error("no methods field in metadata, request validation fails.");
+      throw new CustomError();
+    }
+    if (!metadata.methods.includes(reqMethod)) {
+      console.error(
         `${reqMethod} is not allowed for current endpoint, request validation fails.`
       );
+      throw new CustomError(
+        `${reqMethod} is not allowed for current endpoint.`
+      );
+    }
     return true; // validation succeeds
   };
 
@@ -401,18 +437,24 @@ class Request {
    * @returns
    */
   #validateHandlerPresence = (metadata, reqMethod) => {
-    if (!metadata)
-      throw new Error(
+    if (!metadata) {
+      console.error(
         "no metadata provided for validating allowed methods, request validation fails."
       );
-    if (!metadata.handlers)
-      throw new Error(
+      throw new CustomError();
+    }
+    if (!metadata.handlers) {
+      console.error(
         "no handlers for given endpoint, request validation fails."
       );
-    if (!Object.keys(metadata.handlers).includes(reqMethod))
-      throw new Error(
+      throw new CustomError();
+    }
+    if (!Object.keys(metadata.handlers).includes(reqMethod)) {
+      console.error(
         `no handler defined for ${reqMethod} for current endpoint, request validation fails.`
       );
+      throw new CustomError();
+    }
     return true; // validation succeeds
   };
 
@@ -474,12 +516,17 @@ class Request {
     const requiredKeys =
       metadata && metadata.parameters && metadata.parameters.headers;
     if (!requiredKeys || requiredKeys.length === 0) return true;
-    if (requiredKeys && !headers)
-      throw new Error("headers is required, validation fails");
+    if (requiredKeys && !headers) {
+      console.error(
+        "validateRequestHeaders didn't receive required parameter 'headers'."
+      );
+      throw new CustomError();
+    }
     requiredKeys.forEach((key) => {
       if (!Object.keys(headers).includes(key.toLowerCase()))
-        throw new Error(
-          `required keys for headers are [${requiredKeys}]. cannot find ${key} in provided headers. request validation fails.`
+        throw new CustomError(
+          `required keys for headers are [${requiredKeys}]. cannot find ${key} in provided headers. request validation fails.`,
+          400
         );
     });
     return true;
@@ -497,25 +544,32 @@ class Request {
     try {
       allHandlers = require(fileName);
     } catch (error) {
-      throw new CustomError(error.message + ", importing handler fails", 400);
+      console.error(error);
+      throw new CustomError();
     }
-    if (!allHandlers)
-      throw new CustomError(
-        `no handler file with name "${fileName}" found, importing handlers fails`,
-        400
+    if (!allHandlers) {
+      console.error(
+        `no handler file with name "${fileName}" found, importing handlers fails`
       );
+      throw new CustomError();
+    }
     if (!Object.keys(allHandlers).includes(functionName)) {
-      throw new CustomError(
-        `no handler with name ${functionName} found, importing handler fails.`,
-        400
+      console.error(
+        `no handler with name ${functionName} found, importing handler fails.`
       );
+      throw new CustomError();
     }
     if (!allHandlers[functionName]) {
-      throw new CustomError(
+      console.error(
         `function body not defined for function "${functionName}", importing handler fails.`
       );
+      throw new CustomError();
     }
     return allHandlers[functionName];
   };
+  /** returns relative path to paths.json file */
+  get #pathToPathsJson() {
+    return path.join(__dirname, this.getCategory());
+  }
 }
 module.exports = Request;

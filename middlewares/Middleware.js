@@ -1,12 +1,5 @@
-/* eslint-disable no-unused-vars*/
-// only used for documentation and code suggestion.
-// is version specific even though Middleware should be version independant.
-const Request = require("../api/v1/Request");
-const Response = require("../api/v1/Response");
-/* eslint-enable no-unused-vars*/
-
-const CustomError = require("../api/v1/CustomError");
-
+const CustomError = require("../api/CustomError");
+const path = require("path");
 /**
  * @class Middleware
  * ### maintains a list of middlewares that should be executed before the request handling.
@@ -35,14 +28,16 @@ class Middleware {
 
   /**
    * @constructor
-   * @param {Request} request
+   * @param {import("../api/v1/Request.js")} request
    * @throws {CustomError}
    */
   constructor(request) {
-    if (!request)
-      throw new CustomError(
+    if (!request) {
+      console.error(
         "missing parameter 'request', initializing class Middleware fails."
       );
+      throw new CustomError();
+    }
     this.#middlewares = [];
     this.#middlewareFunctionPaths = [];
     this.#requestPathVariables = request.getPathVariables();
@@ -70,25 +65,33 @@ class Middleware {
         this.#requestPathVariables.httpMethod
       ]
     ) {
-      const pathSpecificFuncPaths =
+      let pathSpecificFuncPaths =
         this.#requestMetadata["middlewares"][
           this.#requestPathVariables.httpMethod
         ] || [];
-      const categorySpecificFuncPaths =
+      let categorySpecificFuncPaths =
         this.#requestMetadata["categorySpecificMiddlewares"] || [];
+
+      // make middleware function paths relative to middleware.js
+      pathSpecificFuncPaths = this.#normalisePaths(
+        pathSpecificFuncPaths,
+        this.#pathToPathsJson
+      );
+      // make middleware function paths relative to middleware.js
+      categorySpecificFuncPaths = this.#normalisePaths(
+        categorySpecificFuncPaths,
+        this.#pathToPathsJson
+      );
+
       if (categorySpecificFirst === true) {
         this.#middlewareFunctionPaths = this.#middlewareFunctionPaths.concat(
-          categorySpecificFuncPaths
-        );
-        this.#middlewareFunctionPaths = this.#middlewareFunctionPaths.concat(
+          categorySpecificFuncPaths,
           pathSpecificFuncPaths
         );
       } else {
         this.#middlewareFunctionPaths = this.#middlewareFunctionPaths.concat(
-          pathSpecificFuncPaths
-        );
-        this.#middlewareFunctionPaths = this.#middlewareFunctionPaths.concat(
-          categorySpecificFuncPaths
+          pathSpecificFuncPaths,
+          categorySpecificFirst
         );
       }
     }
@@ -107,8 +110,12 @@ class Middleware {
       alwaysFuncPaths =
         require("../config.js")["middlewares"][ALWAYS_RUN_SECTION] || [];
     } catch (error) {
-      console.trace(error.message);
+      console.warn(error);
     }
+    alwaysFuncPaths = this.#normalisePaths(
+      alwaysFuncPaths,
+      this.#pathToConfigFile
+    );
     this.#middlewareFunctionPaths =
       this.#middlewareFunctionPaths.concat(alwaysFuncPaths);
     return this;
@@ -120,8 +127,8 @@ class Middleware {
 
   /**
    * Executes ALL middlewares in a sequential manner.
-   * @param {Request} request will be provided to middleware
-   * @param {Response} response will be provided to middleware
+   * @param {import("../api/v1/Request.js")} request will be provided to middleware
+   * @param {import("../api/v1/Response.js")} response will be provided to middleware
    * @throws {CustomError} avoids catching middleware errors.
    * @todo avoid multiple calls to executeAll()
    */
@@ -221,6 +228,7 @@ class Middleware {
         this.addToFront(f);
         i--;
       } catch (error) {
+        // remove non importable function paths from functionPaths
         functionPaths.splice(i, 1);
         i--;
         console.warn(error.message);
@@ -243,29 +251,74 @@ class Middleware {
     try {
       allFunctions = require(fileName);
     } catch (error) {
-      throw new CustomError(
-        error.message + ", importing middleware fails",
-        400
-      );
+      console.log(`cannot import middleware in ${fileName}->${functionName}`);
+      console.error(error);
+      throw new CustomError();
     }
-    if (!allFunctions)
-      throw new CustomError(
+    if (!allFunctions) {
+      console.error(
         `no middleware file with name "${fileName}" found, importing middleware fails.`,
         400
       );
+      throw new CustomError();
+    }
     if (!Object.keys(allFunctions).includes(functionName)) {
-      throw new CustomError(
-        `no middleware with name ${functionName} found, importing middleware fails.`,
-        400
+      console.error(
+        `no middleware with name ${functionName} found, importing middleware fails.`
       );
+      throw new CustomError();
     }
     if (!allFunctions[functionName]) {
-      throw new CustomError(
+      console.error(
         `function body not defined for function "${functionName}", importing middleware fails.`
       );
+      throw new CustomError();
     }
     return allFunctions[functionName];
   };
+  #resolvePath = function (pathToJSON, pathInJSON) {
+    // const path = require("path");
+    const importedFilePath =
+      pathInJSON.split("->").filter((item) => item !== "")[0] || pathInJSON;
+    return path.join(pathToJSON, importedFilePath);
+  };
+
+  /**
+   * reconstructs the paths, and makes them relative to middleware.js
+   * @param {Array<String>} functionPaths
+   * @param {import("fs").PathLike} sourceFilePath
+   * @sideeffect none
+   */
+  #normalisePaths(functionPaths, sourceFilePath) {
+    let arr = [];
+    for (let functionPath of functionPaths) {
+      if (!functionPath) continue;
+      let [file, func] = functionPath.split("->").filter((item) => item !== "");
+      file = this.#resolvePath(sourceFilePath, file);
+      arr.push(file + "->" + func);
+    }
+    return arr;
+  }
+  /**
+   * this acts as a single point of modification in case paths.json's path relative to Middleware.js changes.
+   * @returns {import("fs").PathLike} relative path to paths.json file
+   */
+  get #pathToPathsJson() {
+    return path.join(
+      __dirname,
+      "..",
+      "api",
+      this.#requestPathVariables.version,
+      this.#requestPathVariables.category
+    );
+  }
+  /**
+   * this acts as a single point of modification in case config.js's path relative to Middleware.js changes.
+   * @returns {import("fs").PathLike} relative path to paths.json file
+   */
+  get #pathToConfigFile() {
+    return path.join(__dirname, "..");
+  }
 }
 
 module.exports = Middleware;

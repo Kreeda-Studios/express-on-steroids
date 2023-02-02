@@ -21,7 +21,7 @@ exports.index = async (request, response) => {
     }
     return response.handling(responseData).send();
   } catch (error) {
-    console.trace(error);
+    console.log(error.message);
     if (error && !response.isSent()) {
       return response
         .handling({

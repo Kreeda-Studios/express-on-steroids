@@ -22,8 +22,6 @@ const path = require("path");
 class Request {
   #request;
   #mwData;
-  /**@type {{String: String}} */
-  #pathVariables;
   /** @type {{String: Array<String>}} */
   #support;
   /**
@@ -39,9 +37,15 @@ class Request {
     }
     this.#request = expressRequest;
     this.#mwData = expressRequest.mwData || {};
-    this.#pathVariables = {};
+
     this.#support = null; // {<key> : [<value1>, <value2>, ...]}
-    this.#parsePathVariables();
+    // this.#parsePathVariables();
+    this.getPathVariables = this.#pathVariablesClosure(
+      this.getPath(),
+      this.getHttpMethod()
+    );
+    this.getPathVariables().supported = undefined;
+    console.log(this.getPathVariables());
     this.#validateRequest();
   }
 
@@ -63,47 +67,6 @@ class Request {
     this.#validateRequestHeaders(metadata, this.getHttpHeaders());
     // this.#validateSupportParameters(metadata, this.getSupportParams());
     // this.#validateRequestQuery(metadata, this.getQuery());
-  }
-
-  /**
-   * @private
-   * iterates over `path-schema.json` and stores the parsed data internally in *this.#pathVariables*.
-   * Stores *default* values if received string is **default**
-   */
-  #parsePathVariables() {
-    let PATH_SCHEMA = {};
-    try {
-      PATH_SCHEMA = require("../path-schema.json"); //{}
-    } catch (error) {
-      // "cannot find path-schema.json, parsing path variables fails."
-      console.error(error);
-      throw new CustomError();
-    }
-    const splitPath = this.getSplitPath(); // []
-    Object.keys(PATH_SCHEMA).forEach((key) => {
-      const keySchema = PATH_SCHEMA[key]; // {}
-      if (keySchema.required) {
-        if (splitPath.length <= keySchema.sequence) {
-          throw new CustomError(
-            `${key} is required in request path at sequence ${keySchema.sequence}, parsing path variables fails.`,
-            400
-          );
-        }
-        let value = splitPath[keySchema.sequence] || undefined;
-        if (value === "default") value = keySchema.default;
-        this.#pathVariables[key] = value;
-      } else {
-        let value =
-          (splitPath.length > keySchema.sequence &&
-            splitPath[keySchema.sequence]) ||
-          undefined;
-        if (value === "default") value = keySchema.default;
-        this.#pathVariables[key] = value;
-      }
-    });
-    if (!this.#pathVariables["httpMethod"]) {
-      this.#pathVariables["httpMethod"] = this.getHttpMethod();
-    }
   }
 
   /**
@@ -148,7 +111,7 @@ class Request {
    */
   getSupportParams() {
     if (this.#support) return JSON.parse(JSON.stringify(this.#support));
-    const supportString = this.#pathVariables["support"];
+    const supportString = this.getPathVariables()["support"];
     // if (!supportString) {
     //   console.warn(
     //     "no 'support' field in pathVariables. Warning at getSupportParams() in Request.js."
@@ -210,9 +173,60 @@ class Request {
    * parses the components of *request path* based on the path schema definition from `path-schema.json`.
    * @returns {{String: String}}
    */
-  getPathVariables() {
-    return JSON.parse(JSON.stringify(this.#pathVariables));
+  // getPathVariables() {
+  //   return JSON.parse(JSON.stringify(this.#pathVariables));
+  // }
+  // getPathVariables = this.#pathVariablesIIFE(this.getPath());
+
+  // ===================pathvariables iife helper ==========
+  #pathVariablesClosure(requestPath, httpMethod) {
+    let pathVariables = {};
+    parsePathVariables();
+
+    function parsePathVariables() {
+      let PATH_SCHEMA = {};
+      try {
+        PATH_SCHEMA = require("../path-schema.json"); //{}
+      } catch (error) {
+        // "cannot find path-schema.json, parsing path variables fails."
+        console.error(error);
+        throw new CustomError();
+      }
+      const splitPath =
+        requestPath.split("/").filter((item) => item !== "") || []; // []
+      Object.keys(PATH_SCHEMA).forEach((key) => {
+        const keySchema = PATH_SCHEMA[key]; // {}
+        if (keySchema.required) {
+          if (splitPath.length <= keySchema.sequence) {
+            throw new CustomError(
+              `${key} is required in request path at sequence ${keySchema.sequence}, parsing path variables fails.`,
+              400
+            );
+          }
+          let value = splitPath[keySchema.sequence] || undefined;
+          if (value === "default") value = keySchema.default;
+          pathVariables[key] = value;
+        } else {
+          let value =
+            (splitPath.length > keySchema.sequence &&
+              splitPath[keySchema.sequence]) ||
+            undefined;
+          if (value === "default") value = keySchema.default;
+          pathVariables[key] = value;
+        }
+      });
+      if (!pathVariables["httpMethod"]) {
+        pathVariables["httpMethod"] = httpMethod;
+      }
+    }
+    function getter() {
+      // if dont want to allow modifications to pathVariables use `return JSON.parse(JSON.stringify(pathVariables))`
+      // modifications to pathVariables can be made by using getter().someKey = someValue
+      return pathVariables;
+    }
+    return getter;
   }
+  // =====================================================
 
   // ====================================
   // Middleware Data getters and setters

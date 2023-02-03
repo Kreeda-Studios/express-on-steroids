@@ -87,7 +87,9 @@ class Response {
    * @param {{}} responseData
    * @returns {this}
    */
-  handling(responseData) {
+  handling(responseData, skipBasicResponseSchemaValidation) {
+    this.#support.skipBasicResponseSchemaValidation =
+      skipBasicResponseSchemaValidation;
     if (!responseData) {
       console.error(
         "handler didn't return anything, skipping response handling."

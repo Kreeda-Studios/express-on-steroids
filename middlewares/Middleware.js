@@ -91,7 +91,7 @@ class Middleware {
       } else {
         this.#middlewareFunctionPaths = this.#middlewareFunctionPaths.concat(
           pathSpecificFuncPaths,
-          categorySpecificFirst
+          categorySpecificFuncPaths
         );
       }
     }

@@ -23,11 +23,15 @@ exports.index = async (request, response) => {
   } catch (error) {
     console.log(error.message);
     if (error && !response.isSent()) {
+      const skipBasicResponseSchemaValidation = true;
       return response
-        .handling({
-          message: error.message || "something went wrong at index.js",
-          status: error.statusCode || 500,
-        })
+        .handling(
+          {
+            message: error.message || "something went wrong at index.js",
+            status: error.statusCode || 500,
+          },
+          skipBasicResponseSchemaValidation
+        )
         .send();
     }
   }

@@ -101,8 +101,8 @@ exports.login = (req, res) => {
         "headers": []
     },
     "handlers": {
-        "GET": "./User/handlers.js->getProfile",
-        "POST": "./User/handlers.js->createProfile"
+        "GET": "./handlers.js->getProfile",
+        "POST": "./handlers.js->createProfile"
     },
     "middlewares": {
         "GET": ["./auth.js->login"],
@@ -117,7 +117,7 @@ exports.login = (req, res) => {
 ## Things to notice.
 
 * The sequence of middleware function paths in array determines the sequence the middlewares will be executed in.
-* middleware function path is specified in 2 segments separated with `->`. The first segment is location of middleware file. This location is relative to `Middleware.js` file in your codebase. The second segment is the name of middleware function.  
+* middleware function path is specified in 2 segments separated with `->`. The first segment is location of middleware file. <!--This location is relative to `Middleware.js` file in your codebase-->. The second segment is the name of middleware function.  
 
 * Your middleware function will have access to object of `Request` and `Response` class which bring along helpful methods such as `setMiddlewareData(key, value)`. With this method the middleware can put some data on the `Request` object which will be retained through out the api request lifecycle. This data will be accessible to next middlewares and also the request handler functions.
 

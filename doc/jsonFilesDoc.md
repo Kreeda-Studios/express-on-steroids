@@ -166,7 +166,8 @@ This example determines:
 * Middlewares will always run in the sequence they are declared in the corresponding arrays.
 * The sequence of pathSpecific and categorySpecific middlewares can be dynamically altered in `Middleware` class.
 * If required, middlewares can be added dynamically  at runtime.
-* Middleware function paths should always be relative to Middleware.js file. All middlewares must be defined in `middlewares` directory under appropriate file.
+<!--* Middleware function paths should always be relative to Middleware.js file. -->
+* All middlewares must be defined in `middlewares` directory under appropriate file.
 
 ### Location
 Paths files are category dependant, so they should be placed in respective category directories.

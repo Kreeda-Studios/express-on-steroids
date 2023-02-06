@@ -16,7 +16,7 @@
             "headers": []
         },
         "handlers": {
-            "GET": "./Truck/handlers.js->testHandler",
+            "GET": "./handlers.js->testHandler",
         },
         "middlewares": {
             "GET": []
@@ -24,7 +24,7 @@
     }
 }
 ```
-4. Add following `testHandler` function to `Truck/handlers.js`
+4. Add following `testHandler` function to `/v1/Truck/handlers.js`
 
 ```js
 exports.testHandler = async (req) => {

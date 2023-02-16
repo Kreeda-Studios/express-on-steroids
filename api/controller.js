@@ -27,12 +27,14 @@ exports.handleRequest = (expressRequest, expressResponse) => {
     // ===============================
     // middleware related
     // ===============================
-    const Middleware = require("../middlewares/Middleware");
-    const middleware = new Middleware(request)
-      .parseFromConfigJson()
-      .parseFromRequestMetadata(true);
-    // sequentially execute all middlewares
-    middleware.executeAll(request, response);
+    {
+      const Middleware = require("../middlewares/Middleware");
+      const middleware = new Middleware(request)
+        .parseFromConfigJson()
+        .parseFromRequestMetadata(true);
+      // sequentially execute all middlewares
+      middleware.executeAll(request, response);
+    }
     //================================
 
     // this is the last step, and will start executing version specific logic.

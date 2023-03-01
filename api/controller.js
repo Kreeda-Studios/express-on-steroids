@@ -68,7 +68,10 @@ const parseVersionName = (expressRequest) => {
   }
   const pathSplits =
     (expressRequest.path &&
-      expressRequest.path.split("/").filter((str) => str !== "")) ||
+      expressRequest.path
+        .toLowerCase()
+        .split("/")
+        .filter((str) => str !== "")) ||
     [];
   const versionName =
     (pathSplits.length > VERSION_METADATA.sequence &&

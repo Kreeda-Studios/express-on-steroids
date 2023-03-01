@@ -6,6 +6,7 @@ const express = require("express");
 const CustomError = require("../CustomError");
 const UTILITY = require("./Utility/utility.js");
 const path = require("path");
+const { readdirSync } = require("fs");
 
 /**
  *  #### Acts as a wrapper for *expressRequest*, providing additional functionalities.
@@ -44,6 +45,10 @@ class Request {
     this.getSupportParams = this.#supportParamsClosure(
       this.getPathVariables().support
     );
+    if (process.platform !== "win32") {
+      // non windows file systems are case sensitive, so a decision needs to be made about which Category directory to load
+      this.getAllCategoryDirs = this.#getAllCategoryDirectoriesClosure();
+    }
 
     this.#validateRequest();
   }
@@ -75,7 +80,10 @@ class Request {
    */
   getSplitPath() {
     const pathSplits =
-      this.#request.path.split("/").filter((item) => item !== "") || [];
+      this.#request.path
+        .toLowerCase()
+        .split("/")
+        .filter((item) => item !== "") || [];
     return pathSplits;
   }
 
@@ -198,7 +206,7 @@ class Request {
    * @returns {String} unaltered request's path
    */
   getPath() {
-    return this.#request.path;
+    return this.#request.path.toLowerCase();
   }
   /**
    *
@@ -462,14 +470,61 @@ class Request {
     }
     return allHandlers[functionName];
   };
+
   /** returns relative path to paths.json file */
   get #pathToPathsJson() {
-    return path.join(__dirname, this.getCategory());
+    if (process.platform === "win32") {
+      // windows is case insensitive, no need to filter duplicate directories
+      return path.join(__dirname, this.getCategory());
+    }
+    const dirs = this.getAllCategoryDirs();
+    return path.join(__dirname, dirs[this.getCategory()]);
   }
 
   // =========================================
   // Closures for Core Components of Request
   // =========================================
+
+  // ============= Closure for getting category directories ==============
+
+  /**
+   * return a function, which in turn returns a mapping of {directoryName.toLowerCase(): directoryName}
+   * @returns {() => {string: String}}
+   */
+  #getAllCategoryDirectoriesClosure() {
+    // fetch all candidate category directories
+    // filter and keep only those directories which have "paths.json" file.
+    const dirs = readdirSync(__dirname, { withFileTypes: true })
+      .filter((dirEntry) => dirEntry.isDirectory())
+      .filter((dirEntry) => {
+        return (
+          readdirSync(path.join(__dirname, dirEntry.name)).find(
+            (item) => item === "paths.json"
+          ) !== undefined
+        );
+      })
+      .map((dirEntry) => dirEntry.name);
+
+    // create a mapping of {directoryName.toLowerCase(): directoryName}
+    const dirLowerCaseMap = {};
+    dirs.forEach((directoryName) => {
+      if (dirLowerCaseMap[directoryName.toLowerCase()]) {
+        console.warn(
+          `duplicate directory names found for ${directoryName}. Only ${
+            dirLowerCaseMap[directoryName.toLowerCase()]
+          } will be considered.`
+        );
+        return;
+      }
+      dirLowerCaseMap[directoryName.toLowerCase()] = directoryName;
+    });
+    /**
+     * returns a map which has lowercased directory name as key, and correlated case insensitive directory name.
+     */
+    return function getDirMap() {
+      return dirLowerCaseMap;
+    };
+  }
 
   // ============ support closure ============
   /**

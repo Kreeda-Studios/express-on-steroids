@@ -6,7 +6,6 @@ const express = require("express");
 const CustomError = require("../CustomError");
 const UTILITY = require("./Utility/utility.js");
 const path = require("path");
-const { readdirSync } = require("fs");
 
 /**
  *  #### Acts as a wrapper for *expressRequest*, providing additional functionalities.

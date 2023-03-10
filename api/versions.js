@@ -3,9 +3,7 @@
 const CustomError = require("./CustomError");
 const Request = require("./v1/Request");
 const Response = require("./v1/Response");
-const { readdirSync } = require("fs");
 const path = require("path");
-const e = require("express");
 /* eslint-enable no-unused-vars*/
 
 class VersionModule {
@@ -75,42 +73,7 @@ class VersionModule {
   }
 
   get #versionDirBasePath() {
-    // version needs to be exact match with, `availableVersions`[] in versions.js
-    // if (process.platform === "win32") {
     return path.join(__dirname, this.version);
-    // }
-    // return this.#findVersionDir(__dirname, this.version);
-  }
-  #findVersionDir(baseDir, versionName) {
-    let version = versionName;
-    try {
-      if (require(path.join(baseDir, version, "index.js"))) {
-        return path.join(baseDir, version);
-      }
-    } catch (error) {}
-    version = versionName.toLowerCase();
-    try {
-      if (require(path.join(baseDir, version, "index.js"))) {
-        return path.join(baseDir, version);
-      }
-    } catch (error) {}
-    version = versionName.charAt(0).toUpperCase() + versionName.substring(1);
-    try {
-      if (require(path.join(baseDir, version, "index.js"))) {
-        return path.join(baseDir, version);
-      }
-    } catch (error) {}
-    version =
-      versionName.charAt(0).toUpperCase() +
-      versionName.substring(1).toLowerCase();
-    try {
-      if (require(path.join(baseDir, version, "index.js"))) {
-        return path.join(baseDir, version);
-      }
-    } catch (error) {}
-    throw new Error(
-      `version '${versionName}' is invalid, its directory cannot be found.`
-    );
   }
 }
 

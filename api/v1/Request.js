@@ -25,7 +25,7 @@ class Request {
   #mwData;
   // High Priority : request category, to request handlers' directory name mapping. {category: DirectoryName}
   #categoryNameToDirMap = {
-    general: "Public",
+    // general: "Public",
   };
 
   /** @type {{String: Array<String>}} */
@@ -142,7 +142,7 @@ class Request {
       );
       throw new CustomError();
     }
-    return this.getPathVariables()["category"].toLowerCase();
+    return this.getPathVariables()["category"];
   }
 
   /**
@@ -157,7 +157,7 @@ class Request {
       );
       throw new CustomError();
     }
-    return this.getPathVariables()["request"].toLowerCase();
+    return this.getPathVariables()["request"];
   }
 
   // ====================================
@@ -517,21 +517,35 @@ class Request {
    * @returns
    */
   #findCategoryDir(baseDir, category) {
-    // 1. try complete lowercase
-    let categoryName = category.toLowerCase();
+    // 1. try exact same
+    let categoryName = category;
     try {
       if (require(path.join(baseDir, categoryName, "paths.json"))) {
         return path.join(baseDir, categoryName);
       }
     } catch (error) {}
-    // 2. try 1st letter capitalised + all other chars lowercase
-    categoryName =
-      category.charAt(0).toUpperCase() + category.toLowerCase().substring(1);
+    // 2. try complete lowercase
+    categoryName = category.toLowerCase();
     try {
       if (require(path.join(baseDir, categoryName, "paths.json"))) {
         return path.join(baseDir, categoryName);
       }
     } catch (error) {}
+    // 3. try 1st letter capitalised + all other chars same
+    categoryName = category.charAt(0).toUpperCase() + category.substring(1);
+    try {
+      if (require(path.join(baseDir, categoryName, "paths.json"))) {
+        return path.join(baseDir, categoryName);
+      }
+    } catch (error) {}
+    // 4. try 1st letter capitalised + all other chars lowercase
+    categoryName = category.charAt(0).toUpperCase() + category.substring(1);
+    try {
+      if (require(path.join(baseDir, categoryName, "paths.json"))) {
+        return path.join(baseDir, categoryName);
+      }
+    } catch (error) {}
+    // No such category exists
     throw new Error(`category '${category}' is invalid.`);
   }
 

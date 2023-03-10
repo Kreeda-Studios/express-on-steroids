@@ -26,8 +26,6 @@ class VersionModule {
       );
       this.version = this.defaultVersion;
     }
-    if (process.platform !== "win32")
-      this.getAllVersionDirs = this.#getAllVersionDirsClosure();
   }
   /**
    * call function returned by getIndex() function when request needs to be routed to its required version endpoint.
@@ -35,7 +33,10 @@ class VersionModule {
    */
   getIndex() {
     try {
-      const { index } = require(`./${this.#versionDirBasePath}/index.js`);
+      const { index } = require(path.join(
+        this.#versionDirBasePath,
+        "index.js"
+      ));
       return index;
     } catch (error) {
       console.error(error);
@@ -52,9 +53,10 @@ class VersionModule {
    * @returns {[Request, Response]}
    */
   getRequestResponse(expressRequest, expressResponse) {
-    const { RequestResponseFactory } = require(`./${
-      this.#versionDirBasePath
-    }/index.js`);
+    const { RequestResponseFactory } = require(path.join(
+      this.#versionDirBasePath,
+      "index.js"
+    ));
     if (!RequestResponseFactory) {
       console.error(
         `please define and export function RequestResponseFactory() in './${this.version}/index.js' @ version.getRequestResponse()`
@@ -73,46 +75,42 @@ class VersionModule {
   }
 
   get #versionDirBasePath() {
-    if (process.platform === "win32") {
-      return `./${this.version}`;
-    } else {
-      return `./${this.getAllVersionDirs()[this.version]}`;
-    }
+    // version needs to be exact match with, `availableVersions`[] in versions.js
+    // if (process.platform === "win32") {
+    return path.join(__dirname, this.version);
+    // }
+    // return this.#findVersionDir(__dirname, this.version);
   }
-
-  // ============= closure for getting version directories =============
-
-  #getAllVersionDirsClosure() {
-    // filter and keep only those directories which have "paths.json" file.
-    const dirs = readdirSync(__dirname, { withFileTypes: true })
-      .filter((dir) => dir.isDirectory())
-      .filter((dir) => {
-        return (
-          readdirSync(path.join(__dirname, dir.name)).find(
-            (item) => item === "index.js"
-          ) !== undefined
-        );
-      })
-      .map((dir) => dir.name);
-    const dirLCMap = {};
-
-    dirs.forEach((dir) => {
-      if (dirLCMap[dir.toLowerCase()]) {
-        console.warn(
-          `duplicate directory names found for ${dir}. Only ${
-            dirLCMap[dir.toLowerCase()]
-          } will be considered.`
-        );
-        return;
+  #findVersionDir(baseDir, versionName) {
+    let version = versionName;
+    try {
+      if (require(path.join(baseDir, version, "index.js"))) {
+        return path.join(baseDir, version);
       }
-      dirLCMap[dir.toLowerCase()] = dir;
-    });
-    /**
-     * @returns {{}}
-     */
-    return function getDirMap() {
-      return dirLCMap;
-    };
+    } catch (error) {}
+    version = versionName.toLowerCase();
+    try {
+      if (require(path.join(baseDir, version, "index.js"))) {
+        return path.join(baseDir, version);
+      }
+    } catch (error) {}
+    version = versionName.charAt(0).toUpperCase() + versionName.substring(1);
+    try {
+      if (require(path.join(baseDir, version, "index.js"))) {
+        return path.join(baseDir, version);
+      }
+    } catch (error) {}
+    version =
+      versionName.charAt(0).toUpperCase() +
+      versionName.substring(1).toLowerCase();
+    try {
+      if (require(path.join(baseDir, version, "index.js"))) {
+        return path.join(baseDir, version);
+      }
+    } catch (error) {}
+    throw new Error(
+      `version '${versionName}' is invalid, its directory cannot be found.`
+    );
   }
 }
 

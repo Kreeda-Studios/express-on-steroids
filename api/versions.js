@@ -3,11 +3,12 @@
 const CustomError = require("./CustomError");
 const Request = require("./v1/Request");
 const Response = require("./v1/Response");
+const path = require("path");
 /* eslint-enable no-unused-vars*/
 
 class VersionModule {
   defaultVersion = "v1";
-  availableVersions = ["v1", "v2"]; // add or deprecate versions here
+  availableVersions = ["v1"]; // add or deprecate versions here
   /**
    * @param {String} requestVersion
    */
@@ -30,7 +31,10 @@ class VersionModule {
    */
   getIndex() {
     try {
-      const { index } = require(`./${this.version}/index.js`);
+      const { index } = require(path.join(
+        this.#versionDirBasePath,
+        "index.js"
+      ));
       return index;
     } catch (error) {
       console.error(error);
@@ -47,7 +51,10 @@ class VersionModule {
    * @returns {[Request, Response]}
    */
   getRequestResponse(expressRequest, expressResponse) {
-    const { RequestResponseFactory } = require(`./${this.version}/index.js`);
+    const { RequestResponseFactory } = require(path.join(
+      this.#versionDirBasePath,
+      "index.js"
+    ));
     if (!RequestResponseFactory) {
       console.error(
         `please define and export function RequestResponseFactory() in './${this.version}/index.js' @ version.getRequestResponse()`
@@ -63,6 +70,10 @@ class VersionModule {
       expressResponse
     );
     return [request, response];
+  }
+
+  get #versionDirBasePath() {
+    return path.join(__dirname, this.version);
   }
 }
 

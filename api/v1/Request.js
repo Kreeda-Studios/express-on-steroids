@@ -22,6 +22,11 @@ const path = require("path");
 class Request {
   #request;
   #mwData;
+  // High Priority : request category, to request handlers' directory name mapping. {category: DirectoryName}
+  #categoryNameToDirMap = {
+    // general: "Public",
+  };
+
   /** @type {{String: Array<String>}} */
   /**
    * @param {express.Request} expressRequest express request object received from client
@@ -193,6 +198,27 @@ class Request {
   // =======================================
   // getters for express request properties
   // =======================================
+  get headers() {
+    return this.#request.headers;
+  }
+  get cookies() {
+    return this.#request.cookies;
+  }
+  get method() {
+    return this.#request.method;
+  }
+  get params() {
+    return this.#request.params;
+  }
+  get path() {
+    return this.#request.path;
+  }
+  get query() {
+    return this.#request.query;
+  }
+  get body() {
+    return this.#request.body;
+  }
   /**
    * please use getSplitPath() if you want to split the path on '/'
    * @returns {String} unaltered request's path
@@ -462,9 +488,75 @@ class Request {
     }
     return allHandlers[functionName];
   };
+
   /** returns relative path to paths.json file */
   get #pathToPathsJson() {
-    return path.join(__dirname, this.getCategory());
+    let categoryFoldersBaseDir = __dirname; // base directory which contains category directories
+    // 1. see if manual mapping is created
+    let strictDirNameForCategory = this.#getStrictDirNameFromCategory(
+      this.getCategory()
+    );
+    if (strictDirNameForCategory) {
+      // if manual mapping is made between category name, and some directory name
+      return path.join(categoryFoldersBaseDir, strictDirNameForCategory);
+    }
+    // 2. see if windows subsystem is being used. folder with same name as categoryName will be loaded.
+    if (process.platform === "win32") {
+      // windows is case insensitive, no need to filter duplicate directories
+      return path.join(categoryFoldersBaseDir, this.getCategory());
+    }
+    // 3. try out different case combinations, such as first character uppercased, etc
+    return this.#findCategoryDir(categoryFoldersBaseDir, this.getCategory());
+  }
+
+  /**
+   * tries out some case combinations on 'category', and returns the first one that has paths.json
+   * @param {String} baseDir base directory of category directory
+   * @param {String} category case in-sensitive category directory
+   * @returns
+   */
+  #findCategoryDir(baseDir, category) {
+    // 1. try exact same
+    let categoryName = category;
+    try {
+      if (require(path.join(baseDir, categoryName, "paths.json"))) {
+        return path.join(baseDir, categoryName);
+      }
+    } catch (error) {}
+    // 2. try complete lowercase
+    categoryName = category.toLowerCase();
+    try {
+      if (require(path.join(baseDir, categoryName, "paths.json"))) {
+        return path.join(baseDir, categoryName);
+      }
+    } catch (error) {}
+    // 3. try 1st letter capitalised + all other chars same
+    categoryName = category.charAt(0).toUpperCase() + category.substring(1);
+    try {
+      if (require(path.join(baseDir, categoryName, "paths.json"))) {
+        return path.join(baseDir, categoryName);
+      }
+    } catch (error) {}
+    // 4. try 1st letter capitalised + all other chars lowercase
+    categoryName =
+      category.charAt(0).toUpperCase() + category.substring(1).toLowerCase();
+    try {
+      if (require(path.join(baseDir, categoryName, "paths.json"))) {
+        return path.join(baseDir, categoryName);
+      }
+    } catch (error) {}
+    // No such category exists
+    throw new Error(`category '${category}' is invalid.`);
+  }
+
+  /**
+   * if there is a manual mapping made for category and directory name, then that will be used.
+   * Else undefined will be returned
+   * @param {String} category
+   * @returns
+   */
+  #getStrictDirNameFromCategory(category) {
+    return this.#categoryNameToDirMap[category];
   }
 
   // =========================================
@@ -505,6 +597,7 @@ class Request {
         });
       }
     }
+
     /**
      * adds absent required support keys from params-schema.json
      */

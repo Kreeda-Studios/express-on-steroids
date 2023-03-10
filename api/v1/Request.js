@@ -538,7 +538,8 @@ class Request {
       }
     } catch (error) {}
     // 4. try 1st letter capitalised + all other chars lowercase
-    categoryName = category.charAt(0).toUpperCase() + category.substring(1);
+    categoryName =
+      category.charAt(0).toUpperCase() + category.substring(1).toLowerCase();
     try {
       if (require(path.join(baseDir, categoryName, "paths.json"))) {
         return path.join(baseDir, categoryName);

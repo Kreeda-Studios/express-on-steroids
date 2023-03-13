@@ -516,35 +516,27 @@ class Request {
    * @returns
    */
   #findCategoryDir(baseDir, category) {
+    let possibleOptions = [];
     // 1. try exact same
-    let categoryName = category;
-    try {
-      if (require(path.join(baseDir, categoryName, "paths.json"))) {
-        return path.join(baseDir, categoryName);
-      }
-    } catch (error) {}
-    // 2. try complete lowercase
-    categoryName = category.toLowerCase();
-    try {
-      if (require(path.join(baseDir, categoryName, "paths.json"))) {
-        return path.join(baseDir, categoryName);
-      }
-    } catch (error) {}
-    // 3. try 1st letter capitalised + all other chars same
-    categoryName = category.charAt(0).toUpperCase() + category.substring(1);
-    try {
-      if (require(path.join(baseDir, categoryName, "paths.json"))) {
-        return path.join(baseDir, categoryName);
-      }
-    } catch (error) {}
-    // 4. try 1st letter capitalised + all other chars lowercase
-    categoryName =
-      category.charAt(0).toUpperCase() + category.substring(1).toLowerCase();
-    try {
-      if (require(path.join(baseDir, categoryName, "paths.json"))) {
-        return path.join(baseDir, categoryName);
-      }
-    } catch (error) {}
+    possibleOptions.push(category);
+    // 2. try all lowercase
+    possibleOptions.push(category.toLowerCase());
+    // 3. first char uppercase + all other chars same
+    possibleOptions.push(
+      category.charAt(0).toUpperCase() + category.substring(1)
+    );
+    // 4. first char uppercase + all other chars lowercase
+    possibleOptions.push(
+      category.charAt(0).toUpperCase() + category.substring(1).toLowerCase()
+    );
+    for (let i = 0; i < possibleOptions.length; i++) {
+      try {
+        if (require(path.join(baseDir, possibleOptions[i], "paths.json"))) {
+          return path.join(baseDir, possibleOptions[i]);
+        }
+      } catch (error) {}
+    }
+    
     // No such category exists
     throw new Error(`category '${category}' is invalid.`);
   }

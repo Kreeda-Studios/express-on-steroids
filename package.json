@@ -2,7 +2,7 @@
   "name": "express-on-steroids",
   "version": "1.0.0",
   "description": "Architecture for setting up boilerplate backend project.",
-  "main": "app.js",
+  "main": "index.js",
   "license": "Apache-2.0",
   "dependencies": {
     "body-parser": "^1.17.1",
@@ -12,7 +12,7 @@
     "nodemon": "^2.0.20"
   },
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   }
 }

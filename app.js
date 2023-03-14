@@ -21,9 +21,11 @@ app.use(function (req, res, next) {
 
 //Handle all Http methods on any path
 app.all("*", handleRequest);
-const PORT = 3000;
-app.listen(PORT, function () {
-  console.log(`your awesome api running at http://127.0.0.1:${PORT}`);
-});
 
+// const PORT = 3000;
+// app.listen(PORT, function () {
+//   console.log(`your awesome api running at http://127.0.0.1:${PORT}`);
+// });
+
+// Expose inactive (non-listening) app
 module.exports = app;

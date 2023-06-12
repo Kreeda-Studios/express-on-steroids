@@ -294,7 +294,8 @@ class Middleware {
     for (let functionPath of functionPaths) {
       if (!functionPath) continue;
       let [file, func] = functionPath.split("->").filter((item) => item !== "");
-      file = this.#resolvePath(sourceFilePath, file);
+      // file = this.#resolvePath(sourceFilePath, file);
+      path.join(__dirname, file);
       arr.push(file + "->" + func);
     }
     return arr;
@@ -312,6 +313,7 @@ class Middleware {
       this.#requestPathVariables.category
     );
   }
+
   /**
    * this acts as a single point of modification in case config.js's path relative to Middleware.js changes.
    * @returns {import("fs").PathLike} relative path to paths.json file
